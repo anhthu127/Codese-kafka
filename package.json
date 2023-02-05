@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "format": "prettier src/**/*.ts --write",
-    "build": "tsc"
+    "build": "tsc",
+    "start:producer":"node build/producers/index.js",
+    "start:consumer":"node build/consumers/index.js"
   },
   "author": "",
   "license": "ISC",
@@ -29,9 +31,6 @@
     "mysql2": "^2.3.3",
     "redis": "^4.5.1",
     "socket.io": "^4.5.4",
-    "socket.io-client": "^4.5.4",
-    "circular-json": "^0.5.9",
-    "mysql": "^2.18.1" 
-   
+    "socket.io-client": "^4.5.4"
   }
 }
