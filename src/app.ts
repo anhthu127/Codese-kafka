@@ -1,6 +1,7 @@
 import express, { Request, Response } from "express";
 import { codesePool, query } from "./configs/database.config";
 import http from "http";
+import fs from "fs";
 
 const router = express.Router();
 
@@ -8,6 +9,7 @@ const app = express();
 app.use(router);
 
 const server = http.createServer(app);
+fs.writeFileSync("stock-codes.txt", "");
 
 const getStockTransaction = async (stockCode) => {
   const sql = `select * from StockPrice where code='${stockCode}'`;
