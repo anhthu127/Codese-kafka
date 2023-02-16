@@ -8,26 +8,25 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SyncStockPriceConsumer = void 0;
-const moment_1 = __importDefault(require("moment"));
 const database_config_1 = require("../configs/database.config");
 const kafka_constant_1 = require("../constants/kafka.constant");
+const catch_error_log_repo_1 = require("../repo/catch-error-log.repo");
 const processor = ({ topic, partition, message }) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const startProcess = (0, moment_1.default)();
-        const data = JSON.parse(message.value.toString());
-        const { code, exchange, tradingDate, askPrice1, askVol1 } = data;
-        const sql = `insert into StockPrice (code,exchange,trading_date,askPrice1,askVol1) values (?,?,?,?,?) on duplicate key update exchange=?, trading_date=?, askPrice1=?, askVol1=?`;
-        yield (0, database_config_1.query)(database_config_1.codesePool, sql, [code, exchange, tradingDate, askPrice1, askVol1, exchange, tradingDate, askPrice1, askVol1]);
-        const endProcess = (0, moment_1.default)();
-        console.info(`process_time: ${endProcess.diff(startProcess, 'milliseconds')}ms`);
-    }
-    catch (error) {
-        console.error(error);
+    let tryTimes = 0;
+    while (tryTimes <= 3) {
+        try {
+            const data = JSON.parse(message.value.toString());
+            const { code, exchange, tradingDate, askPrice1, askVol1 } = data;
+            console.log(data, "   ---count---  ", tryTimes);
+            const sql = `insert into stock-price (code,exchange,tradingDate,askPrice1,askVol1) values (?,?,?,?,?) on duplicate key update exchange=?, tradingDate=?, askPrice1=?, askVol1=?`;
+            yield (0, database_config_1.query)(database_config_1.codesePool, sql, [code, exchange, tradingDate, askPrice1, askVol1, exchange, tradingDate, askPrice1, askVol1]);
+        }
+        catch (error) {
+            (0, catch_error_log_repo_1.catchErrorLog)(JSON.stringify(error), Date());
+        }
+        tryTimes += 1;
     }
 });
 exports.SyncStockPriceConsumer = {

@@ -2,12 +2,12 @@
   "name": "operations",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "app.ts",
   "scripts": {
     "format": "prettier src/**/*.ts --write",
     "build": "tsc",
-    "start:producer":"node build/producers/index.js",
-    "start:consumer":"node build/consumers/index.js"
+    "start:producer": "node build/producers/index.js",
+    "start:consumer": "node build/consumers/index.js"
   },
   "author": "",
   "license": "ISC",

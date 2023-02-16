@@ -8,23 +8,36 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SyncStockPriceConsumer = void 0;
+exports.SyncStockTableConsumer = void 0;
 const database_config_1 = require("../configs/database.config");
 const kafka_constant_1 = require("../constants/kafka.constant");
+const fs_1 = __importDefault(require("fs"));
+const create_stock_table_repo_1 = require("../repo/create-stock-table-repo");
+const listStockFileName = "stock-codes.txt";
 const processor = ({ topic, partition, message }) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        console.log(topic);
-        console.log(partition);
         const data = JSON.parse(message.value.toString());
         const { code, exchange, tradingDate, askPrice1, askVol1 } = data;
-        const sql = `insert into StockPrice (code,exchange,trading_date,askPrice1,askVol1) values (?,?,?,?,?) on duplicate key update exchange=?, trading_date=?, askPrice1=?, askVol1=?`;
-        yield (0, database_config_1.query)(database_config_1.codesePool, sql, [
+        let isExist = false;
+        fs_1.default.readFile(listStockFileName, function (err, buf) {
+            isExist = buf.toString().includes(code);
+        });
+        if (!isExist) {
+            yield (0, create_stock_table_repo_1.createStockTable)(data);
+            fs_1.default.appendFile(listStockFileName, `, ${code}`, function (err) {
+                if (err)
+                    throw err;
+                console.log("Saved!");
+            });
+        }
+        const sqlInsertStockTransaction = `insert into ? (code,exchange,tradingDate,askPrice1,askVol1) values (?,?,?,?,?) `;
+        yield (0, database_config_1.query)(database_config_1.codesePool, sqlInsertStockTransaction, [
+            code.toUpperCase(),
             code,
-            exchange,
-            tradingDate,
-            askPrice1,
-            askVol1,
             exchange,
             tradingDate,
             askPrice1,
@@ -35,10 +48,10 @@ const processor = ({ topic, partition, message }) => __awaiter(void 0, void 0, v
         console.error(error);
     }
 });
-exports.SyncStockPriceConsumer = {
-    name: "sync-stock-price",
+exports.SyncStockTableConsumer = {
+    name: "create-stock-table",
     fromBeginning: false,
-    topicSubscribe: kafka_constant_1.KAFKA_TOPIC.STOCK_TRANSACTION,
-    groupId: "operation-group:sync-stock-price",
+    topicSubscribe: kafka_constant_1.KAFKA_TOPIC.CREATE_STOCK_TABLE,
+    groupId: "operation-group:create-stock-table",
     processor,
 };

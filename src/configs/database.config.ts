@@ -6,16 +6,16 @@ export const dbConfig = {
 };
 
 export const dbName = {
-    marketDb: 'marketDb'
+    marketDb: 'stock-market'
 }
 
 export const codesePool = mysql.createPool({
     connectionLimit: dbConfig.limitConnection,
     host: 'localhost',
-    port: 3310,
+    port: 8080,
     user: 'root',
     password: 'password',
-    database: 'marketDb'
+    database: dbName.marketDb
 })
 
 export const query = async (

@@ -1,4 +1,4 @@
-version: '2'
+version: "2"
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
@@ -7,7 +7,7 @@ services:
       ZOOKEEPER_TICK_TIME: 2000
     ports:
       - 22181:2181
-  
+
   kafka:
     image: confluentinc/cp-kafka:latest
     depends_on:
@@ -21,24 +21,41 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-  
-  db:
+
+  mysql_master:
     image: mysql:8.0
     restart: always
     environment:
       - MYSQL_DATABASE=kafka
       - MYSQL_ROOT_PASSWORD=root
     ports:
-      - '3306:3306'
+      - "8080:3306"
     volumes:
       - db:/var/lib/mysql
   cache:
     image: redis:6.2-alpine
     restart: always
     ports:
-      - '6379:6379'
+      - "6379:6379"
     volumes:
       - cache:/data
+
+  # mysql_slave:
+  #   image: mysql:8.0
+  #   env_file:
+  #     - ./slave/mysql_slave.env
+  #   container_name: "mysql_slave"
+  #   restart: "no"
+  #   ports:
+  #     - 5506:3306
+  #   depends_on:
+  #     - mysql_master
+  #   volumes:
+  #     - ./slave/conf/mysql.conf.cnf:/etc/mysql/conf.d/mysql.conf.cnf
+  #     - ./slave/data:/var/lib/mysql
+  #   networks:
+  #     - overlay
+
 volumes:
   db:
     driver: local

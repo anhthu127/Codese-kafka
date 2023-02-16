@@ -19,15 +19,15 @@ exports.dbConfig = {
     limitConnection: 5,
 };
 exports.dbName = {
-    marketDb: 'marketDb'
+    marketDb: 'stock-market'
 };
 exports.codesePool = mysql2_1.default.createPool({
     connectionLimit: exports.dbConfig.limitConnection,
     host: 'localhost',
-    port: 3310,
+    port: 8080,
     user: 'root',
     password: 'password',
-    database: 'marketDb'
+    database: exports.dbName.marketDb
 });
 const query = (pool, sql, params) => __awaiter(void 0, void 0, void 0, function* () {
     return new Promise((resolve, reject) => {

@@ -1,23 +1,26 @@
-import moment from "moment";
 import { codesePool, query } from "../configs/database.config";
 import { KAFKA_TOPIC } from "../constants/kafka.constant";
 import { IConsumer } from "../interfaces/IConsumer.interface";
+import { catchErrorLog } from "../repo/catch-error-log.repo";
 
 const processor = async ({ topic, partition, message }) => {
-    try {
-        const startProcess = moment()
+    let tryTimes = 0;
+    while (tryTimes <= 3) {
+        try {
 
-        const data = JSON.parse(message.value.toString())
-        const { code, exchange, tradingDate, askPrice1, askVol1 } = data
+            const data = JSON.parse(message.value.toString())
+            const { code, exchange, tradingDate, askPrice1, askVol1 } = data
+            console.log(data, "   ---count---  ", tryTimes);
 
-        const sql = `insert into StockPrice (code,exchange,trading_date,askPrice1,askVol1) values (?,?,?,?,?) on duplicate key update exchange=?, trading_date=?, askPrice1=?, askVol1=?`
-        await query(codesePool, sql, [code, exchange, tradingDate, askPrice1, askVol1, exchange, tradingDate, askPrice1, askVol1])
+            const sql = `insert into stock-price (code,exchange,tradingDate,askPrice1,askVol1) values (?,?,?,?,?) on duplicate key update exchange=?, tradingDate=?, askPrice1=?, askVol1=?`
+            await query(codesePool, sql, [code, exchange, tradingDate, askPrice1, askVol1, exchange, tradingDate, askPrice1, askVol1])
 
-        const endProcess = moment()
-        console.info(`process_time: ${endProcess.diff(startProcess, 'milliseconds')}ms`)
-    } catch (error) {
-        console.error(error)
+        } catch (error) {
+            catchErrorLog(JSON.stringify(error), Date())
+        }
+        tryTimes += 1
     }
+
 }
 
 export const SyncStockPriceConsumer: IConsumer = {
