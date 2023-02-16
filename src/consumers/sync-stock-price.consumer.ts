@@ -1,22 +1,82 @@
-import moment from "moment";
 import { codesePool, query } from "../configs/database.config";
+import { isProducerConnected } from "../configs/kafka.config";
 import { KAFKA_TOPIC } from "../constants/kafka.constant";
 import { IConsumer } from "../interfaces/IConsumer.interface";
-
-const processor = async ({ topic, partition, message }) => {
+import { produceErrorsHandler } from "../producers/handling-errors.producer";
+const processor = async ({ message }) => {
     try {
-        const startProcess = moment()
-
         const data = JSON.parse(message.value.toString())
-        const { code, exchange, tradingDate, askPrice1, askVol1 } = data
+        const {
+            code,
+            exchange,
+            tradingDate,
+            askPrice1,
+            askPrice2,
+            askPrice3,
+            askVol1,
+            askVol2,
+            askVol3,
+            bidPrice1,
+            bidPrice2,
+            bidPrice3,
+            bidVol1,
+            bidVol2,
+            bidVol3,
+            lastPrice,
+            totalVol,
+            refPrice,
+        } = data;
 
-        const sql = `insert into StockPrice (code,exchange,trading_date,askPrice1,askVol1) values (?,?,?,?,?) on duplicate key update exchange=?, trading_date=?, askPrice1=?, askVol1=?`
-        await query(codesePool, sql, [code, exchange, tradingDate, askPrice1, askVol1, exchange, tradingDate, askPrice1, askVol1])
+        if (askPrice1 % 2 != 0) {
+            throw Error('Retry message ');
+        }
 
-        const endProcess = moment()
-        console.info(`process_time: ${endProcess.diff(startProcess, 'milliseconds')}ms`)
+        const sql = "insert into `stock-price` (code, exchange, tradingDate, askPrice1, askPrice2, askPrice3, askVol1, askVol2, askVol3, bidPrice1, bidPrice2, bidPrice3, bidVol1, bidVol2, bidVol3, lastPrice, totalVol, refPrice) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) on duplicate key update exchange=?, tradingDate=?, askPrice1=?, askPrice2=?, askPrice3=?, askVol1=?, askVol2=?, askVol3=?, bidPrice1=?, bidPrice2=?, bidPrice3=?, bidVol1=?, bidVol2=?, bidVol3=?, lastPrice=?, totalVol=?, refPrice=?";
+
+        await query(codesePool, sql, [
+            code,
+            exchange,
+            tradingDate,
+            askPrice1,
+            askPrice2,
+            askPrice3,
+            askVol1,
+            askVol2,
+            askVol3,
+            bidPrice1,
+            bidPrice2,
+            bidPrice3,
+            bidVol1,
+            bidVol2,
+            bidVol3,
+            lastPrice,
+            totalVol,
+            refPrice,
+            // conditions section
+            exchange,
+            tradingDate,
+            askPrice1,
+            askPrice2,
+            askPrice3,
+            askVol1,
+            askVol2,
+            askVol3,
+            bidPrice1,
+            bidPrice2,
+            bidPrice3,
+            bidVol1,
+            bidVol2,
+            bidVol3,
+            lastPrice,
+            totalVol,
+            refPrice,
+        ]);
+
     } catch (error) {
-        console.error(error)
+        console.error("- -- - - - - - - - - - - - :       ", error)
+        if (isProducerConnected) {
+            produceErrorsHandler(message.code, JSON.stringify(message))
+        }
     }
 }
 
